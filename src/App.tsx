@@ -4,6 +4,7 @@ import { AuthProvider } from './features/auth/contexts/AuthContext';
 import { LoginPage } from './features/auth/pages/LoginPage';
 import { SignupPage } from './features/auth/pages/SignupPage';
 import { PhotosPage } from './pages/PhotosPage';
+import { ProfilePage } from './pages/ProfilePage';
 import { ProtectedRoute } from './components/ProtectedRoute';
 
 const queryClient = new QueryClient({
@@ -33,6 +34,14 @@ function App() {
               element={
                 <ProtectedRoute>
                   <PhotosPage />
+                </ProtectedRoute>
+              }
+            />
+            <Route
+              path="/profile"
+              element={
+                <ProtectedRoute>
+                  <ProfilePage />
                 </ProtectedRoute>
               }
             />

@@ -13,12 +13,14 @@ import { DeleteConfirmDialog } from '@/features/photos/components/DeleteConfirmD
 import { Button } from '@/components/ui/button';
 import { Photo, SortBy, SortOrder } from '@/features/photos/types/photo';
 import { useQueryClient } from '@tanstack/react-query';
-import { Trash2, Upload, X } from 'lucide-react';
+import { Trash2, Upload, X, User } from 'lucide-react';
+import { useNavigate } from 'react-router-dom';
 import { cn } from '@/lib/utils';
 
 export const PhotosPage = () => {
   const { currentUser, logout } = useAuth();
   const queryClient = useQueryClient();
+  const navigate = useNavigate();
   const [sortBy, setSortBy] = useState<SortBy>('uploadedAt');
   const [sortOrder, setSortOrder] = useState<SortOrder>('desc');
   const [isUploadModalOpen, setIsUploadModalOpen] = useState(false);
@@ -109,9 +111,16 @@ export const PhotosPage = () => {
                 <Upload className="w-4 h-4" />
                 Upload
               </Button>
-              <span className="text-sm text-gray-600 dark:text-gray-400">
-                {currentUser?.email}
-              </span>
+              <Button
+                variant="ghost"
+                onClick={() => navigate('/profile')}
+                className="flex items-center gap-2"
+              >
+                <User className="w-4 h-4" />
+                <span className="text-sm text-gray-600 dark:text-gray-400">
+                  {currentUser?.email}
+                </span>
+              </Button>
               <Button variant="outline" onClick={logout}>
                 Logout
               </Button>
