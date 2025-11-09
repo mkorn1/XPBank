@@ -1,4 +1,4 @@
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useCallback } from 'react';
 import { X } from 'lucide-react';
 import { UploadDropzone } from './UploadDropzone';
 import { UploadProgressList } from './UploadProgressList';
@@ -9,9 +9,10 @@ import { cn } from '@/lib/utils';
 interface UploadModalProps {
   isOpen: boolean;
   onClose: () => void;
+  initialFiles?: File[];
 }
 
-export function UploadModal({ isOpen, onClose }: UploadModalProps) {
+export function UploadModal({ isOpen, onClose, initialFiles }: UploadModalProps) {
   const {
     uploadJobs,
     isUploading,
@@ -23,6 +24,7 @@ export function UploadModal({ isOpen, onClose }: UploadModalProps) {
     getFailedCount,
   } = useUpload();
   const [error, setError] = useState<string | null>(null);
+  const [hasProcessedInitialFiles, setHasProcessedInitialFiles] = useState(false);
 
   useEffect(() => {
     // Clear completed uploads after 5 seconds
@@ -34,14 +36,26 @@ export function UploadModal({ isOpen, onClose }: UploadModalProps) {
     }
   }, [getCompletedCount, isUploading, clearCompleted]);
 
-  const handleFilesSelected = async (files: File[]) => {
+  const handleFilesSelected = useCallback(async (files: File[]) => {
     setError(null);
     try {
       await uploadFiles(files);
     } catch (err: any) {
       setError(err.message || 'Failed to upload files');
     }
-  };
+  }, [uploadFiles]);
+
+  // Handle initial files when modal opens
+  useEffect(() => {
+    if (isOpen && initialFiles && initialFiles.length > 0 && !hasProcessedInitialFiles) {
+      setHasProcessedInitialFiles(true);
+      handleFilesSelected(initialFiles);
+    }
+    // Reset when modal closes
+    if (!isOpen) {
+      setHasProcessedInitialFiles(false);
+    }
+  }, [isOpen, initialFiles, hasProcessedInitialFiles, handleFilesSelected]);
 
   const handleRetry = async (uploadId: string) => {
     setError(null);

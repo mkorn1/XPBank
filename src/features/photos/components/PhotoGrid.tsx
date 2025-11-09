@@ -15,7 +15,7 @@ interface PhotoGridProps {
   selectedIds: string[];
   onSelect: (photoId: string) => void;
   showCheckbox: boolean;
-  onUploadClick: () => void;
+  onFilesSelected: (files: File[]) => void;
 }
 
 export function PhotoGrid({
@@ -25,7 +25,7 @@ export function PhotoGrid({
   selectedIds,
   onSelect,
   showCheckbox,
-  onUploadClick,
+  onFilesSelected,
 }: PhotoGridProps) {
   const { data, isLoading, fetchNextPage, hasNextPage, isFetchingNextPage } =
     usePhotos(sortBy, sortOrder);
@@ -63,7 +63,7 @@ export function PhotoGrid({
   const allPhotos = data?.pages.flatMap((page) => page.photos) || [];
 
   if (allPhotos.length === 0) {
-    return <EmptyState onUploadClick={onUploadClick} />;
+    return <EmptyState onFilesSelected={onFilesSelected} />;
   }
 
   return (

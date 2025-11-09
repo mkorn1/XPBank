@@ -42,12 +42,34 @@ export function useUpload() {
         return updated;
       });
 
+      // Use backend uploadId (will be set after generatePresignedUrl)
+      let actualUploadId = uploadId;
+
       try {
-        // 1. Generate presigned URL
-        const { presignedUrl, s3Key } = await generatePresignedUrl({
+        // 1. Generate presigned URL (this creates the upload job in Firestore)
+        const { presignedUrl, s3Key, uploadId: backendUploadId } = await generatePresignedUrl({
           filename: file.name,
           fileSize: file.size,
           mimeType: file.type,
+        });
+
+        // Use the uploadId from the backend (this matches the one in Firestore)
+        actualUploadId = backendUploadId;
+
+        // Update the local job to use the backend uploadId
+        setUploadJobs((prev) => {
+          const updated = new Map(prev);
+          const oldJob = updated.get(uploadId);
+          if (oldJob) {
+            // Remove old entry and create new one with backend uploadId
+            updated.delete(uploadId);
+            updated.set(actualUploadId, {
+              ...oldJob,
+              uploadId: actualUploadId,
+              status: 'UPLOADING',
+            });
+          }
+          return updated;
         });
 
         // 2. Upload to S3
@@ -55,9 +77,9 @@ export function useUpload() {
           const percent = Math.round((progress.loaded / progress.total) * 100);
           setUploadJobs((prev) => {
             const updated = new Map(prev);
-            const job = updated.get(uploadId);
+            const job = updated.get(actualUploadId);
             if (job) {
-              updated.set(uploadId, { ...job, progress: percent });
+              updated.set(actualUploadId, { ...job, progress: percent });
             }
             return updated;
           });
@@ -77,9 +99,9 @@ export function useUpload() {
         // 4. Generate photo ID
         const photoId = uuidv4();
 
-        // 5. Finalize upload
+        // 5. Finalize upload (use the backend uploadId)
         await finalizeUpload({
-          uploadId,
+          uploadId: actualUploadId,
           photoId,
           width,
           height,
@@ -88,9 +110,9 @@ export function useUpload() {
         // 6. Mark as completed
         setUploadJobs((prev) => {
           const updated = new Map(prev);
-          const job = updated.get(uploadId);
+          const job = updated.get(actualUploadId);
           if (job) {
-            updated.set(uploadId, {
+            updated.set(actualUploadId, {
               ...job,
               status: 'COMPLETED',
               progress: 100,
@@ -105,12 +127,12 @@ export function useUpload() {
         queryClient.invalidateQueries({ queryKey: ['photos'] });
         queryClient.invalidateQueries({ queryKey: ['storage-stats'] });
       } catch (error: any) {
-        // Mark as failed
+        // Mark as failed (use actualUploadId which may be the backend one or the original)
         setUploadJobs((prev) => {
           const updated = new Map(prev);
-          const job = updated.get(uploadId);
+          const job = updated.get(actualUploadId);
           if (job) {
-            updated.set(uploadId, {
+            updated.set(actualUploadId, {
               ...job,
               status: 'FAILED',
               errorMessage: error.message || 'Upload failed',

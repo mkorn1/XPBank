@@ -3,6 +3,7 @@ import { useAuth } from '@/features/auth/contexts/AuthContext';
 import { usePhotos } from '@/features/photos/hooks/usePhotos';
 import { useDeletePhoto } from '@/features/photos/hooks/useDeletePhoto';
 import { usePhotoSelection } from '@/features/photos/hooks/usePhotoSelection';
+import { useUpload } from '@/features/photos/hooks/useUpload';
 import { PhotoGrid } from '@/features/photos/components/PhotoGrid';
 import { SortControls } from '@/features/photos/components/SortControls';
 import { StorageIndicator } from '@/features/photos/components/StorageIndicator';
@@ -37,10 +38,16 @@ export const PhotosPage = () => {
   } = usePhotoSelection();
 
   const deletePhotoMutation = useDeletePhoto();
+  const [initialUploadFiles, setInitialUploadFiles] = useState<File[] | undefined>();
 
   const handleSortChange = (newSortBy: SortBy, newSortOrder: SortOrder) => {
     setSortBy(newSortBy);
     setSortOrder(newSortOrder);
+  };
+
+  const handleFilesSelected = (files: File[]) => {
+    setInitialUploadFiles(files);
+    setIsUploadModalOpen(true);
   };
 
   const handlePhotoClick = (photo: Photo) => {
@@ -158,14 +165,18 @@ export const PhotosPage = () => {
           selectedIds={selectedIds}
           onSelect={toggleSelection}
           showCheckbox={selectedCount > 0}
-          onUploadClick={() => setIsUploadModalOpen(true)}
+          onFilesSelected={handleFilesSelected}
         />
       </main>
 
       {/* Upload Modal */}
       <UploadModal
         isOpen={isUploadModalOpen}
-        onClose={() => setIsUploadModalOpen(false)}
+        onClose={() => {
+          setIsUploadModalOpen(false);
+          setInitialUploadFiles(undefined);
+        }}
+        initialFiles={initialUploadFiles}
       />
 
       {/* Photo Detail Modal */}
