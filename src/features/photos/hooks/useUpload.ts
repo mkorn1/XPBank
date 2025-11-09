@@ -8,13 +8,12 @@ import { validateFile, validateBatch, MAX_FILES } from '../utils/validateFile';
 import { UploadJob, UploadStatus } from '../types/upload';
 import { useStorageQuota } from './useStorageQuota';
 import { useAuth } from '@/features/auth/contexts/AuthContext';
+import { useUploadContext } from '../contexts/UploadContext';
 
-const MAX_CONCURRENT_UPLOADS = 100;
+const MAX_CONCURRENT_UPLOADS = 150;
 
 export function useUpload() {
-  const [uploadJobs, setUploadJobs] = useState<Map<string, UploadJob>>(
-    new Map()
-  );
+  const { uploadJobs, setUploadJobs, updateUploadJob } = useUploadContext();
   const [isUploading, setIsUploading] = useState(false);
   const queryClient = useQueryClient();
   const { currentUser } = useAuth();
@@ -33,14 +32,7 @@ export function useUpload() {
       if (!currentUser) throw new Error('Not authenticated');
 
       // Update status to UPLOADING
-      setUploadJobs((prev) => {
-        const updated = new Map(prev);
-        const job = updated.get(uploadId);
-        if (job) {
-          updated.set(uploadId, { ...job, status: 'UPLOADING' });
-        }
-        return updated;
-      });
+      updateUploadJob(uploadId, { status: 'UPLOADING' });
 
       // Use backend uploadId (will be set after generatePresignedUrl)
       let actualUploadId = uploadId;
@@ -75,14 +67,7 @@ export function useUpload() {
         // 2. Upload to S3
         await uploadToS3(presignedUrl, file, (progress) => {
           const percent = Math.round((progress.loaded / progress.total) * 100);
-          setUploadJobs((prev) => {
-            const updated = new Map(prev);
-            const job = updated.get(actualUploadId);
-            if (job) {
-              updated.set(actualUploadId, { ...job, progress: percent });
-            }
-            return updated;
-          });
+          updateUploadJob(actualUploadId, { progress: percent });
         });
 
         // 3. Get image dimensions
@@ -108,19 +93,11 @@ export function useUpload() {
         });
 
         // 6. Mark as completed
-        setUploadJobs((prev) => {
-          const updated = new Map(prev);
-          const job = updated.get(actualUploadId);
-          if (job) {
-            updated.set(actualUploadId, {
-              ...job,
-              status: 'COMPLETED',
-              progress: 100,
-              photoId,
-              completedAt: new Date(),
-            });
-          }
-          return updated;
+        updateUploadJob(actualUploadId, {
+          status: 'COMPLETED',
+          progress: 100,
+          photoId,
+          completedAt: new Date(),
         });
 
         // 7. Invalidate queries
@@ -128,23 +105,16 @@ export function useUpload() {
         queryClient.invalidateQueries({ queryKey: ['storage-stats'] });
       } catch (error: any) {
         // Mark as failed (use actualUploadId which may be the backend one or the original)
-        setUploadJobs((prev) => {
-          const updated = new Map(prev);
-          const job = updated.get(actualUploadId);
-          if (job) {
-            updated.set(actualUploadId, {
-              ...job,
-              status: 'FAILED',
-              errorMessage: error.message || 'Upload failed',
-              retryCount: (job.retryCount || 0) + 1,
-            });
-          }
-          return updated;
+        const job = uploadJobs.get(actualUploadId);
+        updateUploadJob(actualUploadId, {
+          status: 'FAILED',
+          errorMessage: error.message || 'Upload failed',
+          retryCount: (job?.retryCount || 0) + 1,
         });
         throw error;
       }
     },
-    [currentUser, queryClient]
+    [currentUser, queryClient, updateUploadJob, uploadJobs]
   );
 
   const uploadFiles = useCallback(
@@ -232,22 +202,17 @@ export function useUpload() {
       }
 
       // Reset job
-      setUploadJobs((prev) => {
-        const updated = new Map(prev);
-        updated.set(uploadId, {
-          ...job,
-          status: 'PENDING',
-          progress: 0,
-          errorMessage: undefined,
-        });
-        return updated;
+      updateUploadJob(uploadId, {
+        status: 'PENDING',
+        progress: 0,
+        errorMessage: undefined,
       });
 
       // Create a File object from the job (we'll need to store the file or re-request it)
       // For now, we'll need the user to re-select the file
       throw new Error('Retry requires re-selecting the file');
     },
-    [uploadJobs]
+    [uploadJobs, updateUploadJob]
   );
 
   const clearCompleted = useCallback(() => {

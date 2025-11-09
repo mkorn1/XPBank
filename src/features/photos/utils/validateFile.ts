@@ -7,7 +7,7 @@ export const ALLOWED_TYPES = [
   'image/heic',
 ];
 export const ALLOWED_EXTENSIONS = ['.jpg', '.jpeg', '.png', '.webp', '.heic'];
-export const MAX_FILES = 100;
+export const MAX_FILES = 150;
 
 export interface ValidationResult {
   valid: boolean;

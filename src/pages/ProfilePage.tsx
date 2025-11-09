@@ -1,14 +1,13 @@
 import { useState } from 'react';
 import { useAuth } from '@/features/auth/contexts/AuthContext';
-import { useNavigate } from 'react-router-dom';
 import { Card, CardHeader, CardTitle, CardContent } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
-import { User, Settings, Mail, Calendar, Save, LogOut } from 'lucide-react';
+import { User, Settings, Mail, Calendar, Save } from 'lucide-react';
+import { AppLayout } from '@/components/AppLayout';
 
 export const ProfilePage = () => {
-  const { currentUser, logout } = useAuth();
-  const navigate = useNavigate();
+  const { currentUser } = useAuth();
   
   // Manual user data - can be edited
   const [userData, setUserData] = useState({
@@ -49,10 +48,6 @@ export const ProfilePage = () => {
     setIsEditing(false);
   };
 
-  const handleLogout = async () => {
-    await logout();
-    navigate('/login');
-  };
 
   const formatDate = (timestamp: any) => {
     if (!timestamp) return 'N/A';
@@ -65,31 +60,8 @@ export const ProfilePage = () => {
   };
 
   return (
-    <div className="min-h-screen bg-gray-50 dark:bg-gray-900">
-      {/* Header */}
-      <header className="bg-white dark:bg-gray-800 border-b border-gray-200 dark:border-gray-700 sticky top-0 z-40">
-        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
-          <div className="flex justify-between items-center h-16">
-            <h1 className="text-xl font-semibold text-gray-900 dark:text-gray-50">
-              XPBank
-            </h1>
-            <div className="flex items-center gap-4">
-              <Button
-                variant="outline"
-                onClick={() => navigate('/photos')}
-              >
-                Back to Photos
-              </Button>
-              <Button variant="outline" onClick={handleLogout}>
-                <LogOut className="w-4 h-4 mr-2" />
-                Logout
-              </Button>
-            </div>
-          </div>
-        </div>
-      </header>
-
-      <main className="max-w-4xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
+    <AppLayout>
+      <div className="max-w-4xl mx-auto">
         <div className="space-y-6">
           {/* Profile Header */}
           <Card>
@@ -333,8 +305,8 @@ export const ProfilePage = () => {
             </CardContent>
           </Card>
         </div>
-      </main>
-    </div>
+      </div>
+    </AppLayout>
   );
 };
 
