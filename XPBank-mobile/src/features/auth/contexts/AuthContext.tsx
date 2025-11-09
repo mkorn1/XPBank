@@ -7,7 +7,7 @@ import {
   onAuthStateChanged,
 } from 'firebase/auth';
 import { doc, setDoc, serverTimestamp } from 'firebase/firestore';
-import { auth, db } from '../../../lib/firebase';
+import { auth, db } from '../../../../lib/firebase';
 
 interface AuthContextType {
   currentUser: User | null;

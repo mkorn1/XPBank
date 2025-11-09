@@ -262,7 +262,7 @@ export function useUpload() {
     return Math.round(totalProgress / uploadJobs.size);
   }, [uploadJobs]);
 
-  const getCompletedCount = useCallback(): number => {
+  const getCompletedCount = useCallback((): number => {
     return Array.from(uploadJobs.values()).filter(
       (job) => job.status === 'COMPLETED'
     ).length;
